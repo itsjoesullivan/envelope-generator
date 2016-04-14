@@ -1,6 +1,6 @@
 Basic ADSR envelope generator for web audio.
 
-```
+```javascript
 import Envelope from 'envelope';
 
 let context = new AudioContext();
