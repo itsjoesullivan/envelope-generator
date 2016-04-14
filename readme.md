@@ -1,4 +1,4 @@
-##Envelope Generator
+##Envelope Generator ![Test status](https://api.travis-ci.org/itsjoesullivan/envelope-generator.svg)
 
 Basic ADSR envelope generator for web audio.
 
