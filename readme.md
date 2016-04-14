@@ -1,7 +1,7 @@
 Basic ADSR envelope generator for web audio.
 
 ```javascript
-import Envelope from 'envelope';
+import Envelope from 'envelope-generator';
 
 let context = new AudioContext();
 let osc = context.createOscillator();
