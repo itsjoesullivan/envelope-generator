@@ -2,6 +2,10 @@
 
 Basic ADSR envelope generator for web audio.
 
+```bash
+npm install --save envelope-generator
+```
+
 ```javascript
 import Envelope from 'envelope-generator';
 
