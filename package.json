@@ -2,10 +2,11 @@
   "name": "envelope-generator",
   "version": "1.0.0",
   "description": "An envelope generator for web audio",
-  "main": "index.js",
+  "main": "envelope-generator.js",
   "scripts": {
     "test": "./node_modules/.bin/mocha --compilers js:babel-register",
-    "build": "./node_modules/.bin/babel index.js --presets babel-preset-es2015 > ./envelope-generator.js"
+    "build": "./node_modules/.bin/babel index.js --presets babel-preset-es2015 > ./envelope-generator.js",
+    "prepublish": "npm run build"
   },
   "keywords": [
     "web audio",
