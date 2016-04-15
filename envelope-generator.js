@@ -27,11 +27,24 @@ var Envelope = function () {
     this.source = this._getOnesBufferSource();
     this.attackDecayNode = context.createGain();
     this.releaseNode = context.createGain();
+    this.ampNode = context.createGain();
+    this.outputNode = context.createGain();
+
+    this.outputNode.gain.value = this.settings.startLevel;
+    this.ampNode.gain.value = this.settings.maxLevel - this.settings.startLevel;
 
     // Set up graph
     this.source.connect(this.attackDecayNode);
+    this.source.connect(this.outputNode);
     this.attackDecayNode.connect(this.releaseNode);
+    this.releaseNode.connect(this.ampNode);
+    this.ampNode.connect(this.outputNode.gain);
   }
+
+  /**
+   * Deal w/ settings object
+   */
+
 
   _createClass(Envelope, [{
     key: '_setDefaults',
@@ -51,8 +64,14 @@ var Envelope = function () {
       if (typeof this.settings.startLevel !== 'number') {
         this.settings.startLevel = 0;
       }
-      if (this.settings.startLevel === 0) {
-        this.settings.startLevel = 0.001;
+      // maxLevel
+      if (typeof this.settings.maxLevel !== 'number') {
+        this.settings.maxLevel = 1;
+      }
+
+      // sustainLevel
+      if (typeof this.settings.sustainLevel !== 'number') {
+        this.settings.sustainLevel = 1;
       }
 
       // attackTime
@@ -69,21 +88,40 @@ var Envelope = function () {
       if (typeof this.settings.decayTime !== 'number') {
         this.settings.decayTime = 0;
       }
-      if (this.settings.decayTime === 0) {
-        this.settings.decayTime = 0.001;
-      }
-
-      // sustainLevel
-      if (typeof this.settings.sustainLevel !== 'number') {
-        this.settings.sustainLevel = 1;
-      }
-      if (this.settings.sustainLevel === 0) {
-        this.settings.sustainLevel = 0.001;
-      }
 
       // releaseTime
       if (typeof this.settings.releaseTime !== 'number') {
         this.settings.releaseTime = 0;
+      }
+
+      // startLevel must not be zero if attack curve is exponential
+      if (this.settings.startLevel === 0 && this._getRampMethodName('attack') === 'exponentialRampToValueAtTime') {
+        if (this.settings.maxLevel < 0) {
+          this.settings.startLevel = -0.001;
+        } else {
+          this.settings.startLevel = 0.001;
+        }
+      }
+
+      // maxLevel must not be zero if attack, decay, or release curve is exponential
+      if (this.settings.maxLevel === 0 && (this._getRampMethodName('attack') === 'exponentialRampToValueAtTime' || this._getRampMethodName('decay') === 'exponentialRampToValueAtTime' || this._getRampMethodName('release') === 'exponentialRampToValueAtTime')) {
+        if (this.settings.startLevel < 0) {
+          this.settings.maxLevel = -0.001;
+        } else {
+          this.settings.maxLevel = 0.001;
+        }
+      }
+
+      // sustainLevel must not be zero if decay or release curve is exponential
+      if (this.settings.sustainLevel === 0 && (this._getRampMethodName('decay') === 'exponentialRampToValueAtTime' || this._getRampMethodName('release') === 'exponentialRampToValueAtTime')) {
+        // No need to be negative here as it's a multiplier
+        this.settings.sustainLevel = 0.001;
+      }
+
+      // decayTime must not be zero to avoid colliding with attack curve events
+      if (this.settings.decayTime === 0) {
+
+        this.settings.decayTime = 0.001;
       }
     }
 
@@ -99,9 +137,13 @@ var Envelope = function () {
     value: function _getOnesBufferSource() {
       var context = this.context;
 
-      // Generate buffer, setting its one sample to 1
-      var onesBuffer = context.createBuffer(1, 1, context.sampleRate);
-      onesBuffer.getChannelData(0)[0] = 1;
+      // Generate buffer, setting its samples to 1
+      // Needs to be 2 for safari!
+      // Hat tip to https://github.com/mmckegg/adsr
+      var onesBuffer = context.createBuffer(1, 2, context.sampleRate);
+      var data = onesBuffer.getChannelData(0);
+      data[0] = 1;
+      data[1] = 1;
 
       // Create a source for the buffer, looping it
       var source = context.createBufferSource();
@@ -121,7 +163,7 @@ var Envelope = function () {
   }, {
     key: 'connect',
     value: function connect(targetParam) {
-      this.releaseNode.connect(targetParam);
+      this.outputNode.connect(targetParam);
     }
 
     /**
@@ -141,8 +183,13 @@ var Envelope = function () {
       var decayStartsAt = attackEndsAt + this.settings.holdTime;
       var decayEndsAt = decayStartsAt + this.settings.decayTime;
 
-      this.attackDecayNode.gain.setValueAtTime(this.settings.startLevel, when);
-      this.attackDecayNode.gain.setValueAtTime(this.settings.startLevel, attackStartsAt);
+      var attackStartLevel = 0;
+      if (attackRampMethodName === "exponentialRampToValueAtTime") {
+        attackStartLevel = 0.001;
+      }
+
+      this.attackDecayNode.gain.setValueAtTime(attackStartLevel, when);
+      this.attackDecayNode.gain.setValueAtTime(attackStartLevel, attackStartsAt);
       this.attackDecayNode.gain[attackRampMethodName](1, attackEndsAt);
       this.attackDecayNode.gain.setValueAtTime(1, decayStartsAt);
       this.attackDecayNode.gain[decayRampMethodName](this.settings.sustainLevel, decayEndsAt);
@@ -219,10 +266,19 @@ var Envelope = function () {
 
       var rampMethodName = this._getRampMethodName('release');
 
-      this.releaseNode.gain.setValueAtTime(1, when);
-      this.releaseNode.gain[rampMethodName](this.settings.startLevel, releaseEndsAt);
+      var releaseTargetLevel = 0;
 
-      this.source.stop(releaseEndsAt);
+      if (rampMethodName === "exponentialRampToValueAtTime") {
+        releaseTargetLevel = 0.001;
+      }
+
+      this.releaseNode.gain.setValueAtTime(1, when);
+      this.releaseNode.gain[rampMethodName](releaseTargetLevel, releaseEndsAt);
+    }
+  }, {
+    key: 'stop',
+    value: function stop(when) {
+      this.source.stop(when);
     }
 
     /**

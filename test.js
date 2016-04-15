@@ -25,7 +25,8 @@ describe('Envelope', () => {
       audioContext = {
         createGain: () => {
           return {
-            connect: sinon.spy()
+            connect: sinon.spy(),
+            gain: {}
           };
         }
       };
@@ -55,21 +56,58 @@ describe('Envelope', () => {
       let env = new SubClassedEnvelope(audioContext, {});
       assert(env.releaseNode.connect)
     });
+    it('creates ampNode', () => {
+      let env = new SubClassedEnvelope(audioContext, {});
+      assert(env.ampNode.connect)
+    });
+    it('creates outputNode', () => {
+      let env = new SubClassedEnvelope(audioContext, {});
+      assert(env.outputNode.connect)
+    });
+    it('sets outputNode gain to startLevel', () => {
+      let env = new SubClassedEnvelope(audioContext, {
+        startLevel: 12
+      });
+      assert.equal(env.outputNode.gain.value, 12);
+    });
+    it('sets ampNode gain to maxLevel - startLevel', () => {
+      let env = new SubClassedEnvelope(audioContext, {
+        startLevel: 12,
+        maxLevel: 15
+      });
+      assert.equal(env.ampNode.gain.value, 3);
+    });
     it('connects source to attackDecayNode', () => {
       let env = new SubClassedEnvelope(audioContext, {});
       assert(env.source.connect.calledWith(env.attackDecayNode));
     });
+    it('connects source to outputNode', () => {
+      let env = new SubClassedEnvelope(audioContext, {});
+      assert(env.source.connect.calledWith(env.outputNode));
+    });
     it('connects attackDecayNode to releaseNode', () => {
       let env = new SubClassedEnvelope(audioContext, {});
       assert(env.attackDecayNode.connect.calledWith(env.releaseNode));
+    });
+    it('connects releaseNode to ampNode', () => {
+      let env = new SubClassedEnvelope(audioContext, {});
+      assert(env.releaseNode.connect.calledWith(env.ampNode));
+    });
+    it('connects ampNode to outputNode.gain', () => {
+      let env = new SubClassedEnvelope(audioContext, {});
+      assert(env.ampNode.connect.calledWith(env.outputNode.gain));
     });
   });
   describe('#_setDefaults', () => {
     let context = {};
     beforeEach(() => {
       context = {
-        settings: {}
+        settings: {
+          curve: 'linear'
+        },
       };
+      context._getRampMethodName = Envelope.prototype
+        ._getRampMethodName.bind(context);
     });
     it('sets curve to "linear"', () => {
       Envelope.prototype._setDefaults.apply(context);
@@ -84,9 +122,17 @@ describe('Envelope', () => {
       Envelope.prototype._setDefaults.apply(context);
       context.settings.delayTime.should.equal(0);
     });
-    it('sets startLevel to 0.001', () => {
+    it('sets startLevel to 0', () => {
       Envelope.prototype._setDefaults.apply(context);
-      context.settings.startLevel.should.equal(0.001);
+      context.settings.startLevel.should.equal(0);
+    });
+    it('sets maxLevel to 1', () => {
+      Envelope.prototype._setDefaults.apply(context);
+      context.settings.maxLevel.should.equal(1);
+    });
+    it('sets sustainLevel to 1', () => {
+      Envelope.prototype._setDefaults.apply(context);
+      context.settings.sustainLevel.should.equal(1);
     });
     it('sets attackTime to 0', () => {
       Envelope.prototype._setDefaults.apply(context);
@@ -100,13 +146,41 @@ describe('Envelope', () => {
       Envelope.prototype._setDefaults.apply(context);
       context.settings.decayTime.should.equal(0.001);
     });
-    it('sets sustainLevel to 1', () => {
-      Envelope.prototype._setDefaults.apply(context);
-      context.settings.sustainLevel.should.equal(1);
-    });
     it('sets releaseTime to 0', () => {
       Envelope.prototype._setDefaults.apply(context);
       context.settings.releaseTime.should.equal(0);
+    });
+    it('if exponential, 0 startLevel becomes 0.001', () => {
+      context.settings.curve = 'exponential';
+      Envelope.prototype._setDefaults.apply(context);
+      context.settings.startLevel.should.equal(0.001);
+    });
+    it('if exponential, 0 maxLevel becomes 0.001', () => {
+      context.settings.curve = 'exponential';
+      context.settings.maxLevel = 0;
+      context.settings.startLevel = 1;
+      Envelope.prototype._setDefaults.apply(context);
+      context.settings.maxLevel.should.equal(0.001);
+    });
+    it('if exponential and negative maxLevel, 0 startLevel becomes -0.001', () => {
+      context.settings.curve = 'exponential';
+      context.settings.startLevel = 0;
+      context.settings.maxLevel = -10;
+      Envelope.prototype._setDefaults.apply(context);
+      context.settings.startLevel.should.equal(-0.001);
+    });
+    it('if exponential and negative startlevel, 0 maxLevel becomes -0.001', () => {
+      context.settings.curve = 'exponential';
+      context.settings.maxLevel = 0;
+      context.settings.startLevel = -10;
+      Envelope.prototype._setDefaults.apply(context);
+      context.settings.maxLevel.should.equal(-0.001);
+    });
+    it('if exponential, 0 sustainLevel becomes 0.001', () => {
+      context.settings.curve = 'exponential';
+      context.settings.sustainLevel = 0;
+      Envelope.prototype._setDefaults.apply(context);
+      context.settings.sustainLevel.should.equal(0.001);
     });
   });
   describe("#_getOnesBufferSource", () => {
@@ -115,7 +189,7 @@ describe('Envelope', () => {
       let audioContext = {
         createBuffer: () => {
           let buffer = {};
-          buffer.arr = [0];
+          buffer.arr = [0, 0];
           buffer.getChannelData = (index) => {
             if (index === 0) {
               return buffer.arr;
@@ -145,19 +219,20 @@ describe('Envelope', () => {
     });
     it("assigns a buffer of 1s as the source's buffer", () => {
       let source = Envelope.prototype._getOnesBufferSource.apply(context);
-      assert.equal(source.buffer.getChannelData(0).length, 1)
+      assert.equal(source.buffer.getChannelData(0).length, 2)
       assert.equal(source.buffer.getChannelData(0)[0], 1)
+      assert.equal(source.buffer.getChannelData(0)[1], 1)
     });
   });
   describe("#connect", () => {
-    it('connects argument to releaseNode', () => {
+    it('connects argument to outputNode', () => {
       let context = {
-        releaseNode: {
+        outputNode: {
           connect: sinon.spy()
         }
       }
       Envelope.prototype.connect.apply(context, ["test"]);
-      assert(context.releaseNode.connect.calledWith("test"));
+      assert(context.outputNode.connect.calledWith("test"));
     });
   });
   describe("#start", () => {
@@ -186,18 +261,35 @@ describe('Envelope', () => {
       };
       context._getRampMethodName = Envelope.prototype._getRampMethodName.bind(context);
     });
-    it("sets attackDecayNode to startlevel at start", () => {
+    it("if linear, sets attackDecayNode to 0 at start", () => {
       let when = 0.6;
+      context.settings.curve = "linear";
       Envelope.prototype.start.apply(context, [when]);
       assert(context.attackDecayNode.gain
-          .setValueAtTime.calledWith(context.settings.startLevel, when));
+          .setValueAtTime.calledWith(0, when));
     });
-    it("sets attackDecayNode to startLevel after delayTime", () => {
+    it("if exponential, sets attackDecayNode to 0.001 at start", () => {
       let when = 0.6;
+      context.settings.curve = "exponential";
+      Envelope.prototype.start.apply(context, [when]);
+      assert(context.attackDecayNode.gain
+          .setValueAtTime.calledWith(0.001, when));
+    });
+    it("if linear, sets attackDecayNode to 0 after delayTime", () => {
+      let when = 0.6;
+      context.settings.curve = "linear";
       let attackStartTime = when + context.settings.delayTime;
       Envelope.prototype.start.apply(context, [when]);
       assert(context.attackDecayNode.gain
-          .setValueAtTime.calledWith(context.settings.startLevel, attackStartTime));
+          .setValueAtTime.calledWith(0, attackStartTime));
+    });
+    it("if exponential, sets attackDecayNode to 0.001 after delayTime", () => {
+      let when = 0.6;
+      context.settings.curve = "exponential";
+      let attackStartTime = when + context.settings.delayTime;
+      Envelope.prototype.start.apply(context, [when]);
+      assert(context.attackDecayNode.gain
+          .setValueAtTime.calledWith(0.001, attackStartTime));
     });
     it("ramps to 1 by delayTime + attackTime", () => {
       let when = 0.6;
@@ -216,7 +308,7 @@ describe('Envelope', () => {
       assert(context.attackDecayNode.gain
           .setValueAtTime.calledWith(1, decayStartTime));
     });
-    it("ramps to startLevel after holdTime", () => {
+    it("ramps to sustainLevel after holdTime", () => {
       let when = 0.6;
       let attackStartTime = when + context.settings.delayTime;
       let attackEndTime = attackStartTime + context.settings.attackTime;
@@ -283,9 +375,6 @@ describe('Envelope', () => {
     let context;
     beforeEach(() => {
       context = {
-        source: {
-          stop: sinon.spy()
-        },
         releaseNode: {
           gain: {
             setValueAtTime: sinon.spy(),
@@ -306,18 +395,33 @@ describe('Envelope', () => {
       Envelope.prototype.release.apply(context, [when]);
       assert(context.releaseNode.gain.setValueAtTime.calledWith(1, when));
     });
-    it("ramps to startLevel by release end", () => {
+    it("if linear, ramps to 0 by release end", () => {
       let when = 0.9;
+      context.settings.curve = "linear";
       Envelope.prototype.release.apply(context, [when]);
       let releaseEndsAt = when + context.settings.releaseTime;
       assert(context.releaseNode.gain.linearRampToValueAtTime
-          .calledWith(context.settings.startLevel, releaseEndsAt));
+          .calledWith(0, releaseEndsAt));
     });
-    it("stops source at end of release", () => {
+    it("if exponential, ramps to 0.001 by release end", () => {
       let when = 0.9;
+      context.settings.curve = "exponential";
       Envelope.prototype.release.apply(context, [when]);
       let releaseEndsAt = when + context.settings.releaseTime;
-      assert(context.source.stop.calledWith(releaseEndsAt));
+      assert(context.releaseNode.gain.exponentialRampToValueAtTime
+          .calledWith(0.001, releaseEndsAt));
+    });
+  });
+  describe("#stop", () => {
+    it("stops source", () => {
+      context = {
+        source: {
+          stop: sinon.spy()
+        }
+      }
+      let when = 0.9;
+      Envelope.prototype.stop.apply(context, [when]);
+      assert(context.source.stop.calledWith(when));
     });
   });
   describe("#getReleaseCompleteTime", () => {

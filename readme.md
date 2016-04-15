@@ -31,7 +31,10 @@ osc.start(startAt);
 env.start(startAt);
 
 env.release(releaseAt);
-osc.stop(env.getReleaseCompleteTime());
+
+let stopAt = env.getReleaseCompleteTime();
+osc.stop(stopAt);
+env.stop(stopAt);
 ```
 
 ###Usage
@@ -52,6 +55,7 @@ let settings = {
   releaseCurve: "linear",
   delayTime: 0,
   startLevel: 0,
+  maxLevel: 1,
   attackTime: 0.1,
   holdTime: 0,
   decayTime: 0,
@@ -61,7 +65,7 @@ let settings = {
 let env = new Envelope(context, settings)
 ```
 
-####Connect
+####connect
 
 The `connect` method should be attached directly to `AudioParam`s:
 
@@ -72,7 +76,7 @@ let env = new Envelope(context, settings);
 env.connect(gainNode.gain);
 ```
 
-####Start
+####start
 
 The `start` method triggers the attack and decay stages of the envelope:
 
@@ -86,7 +90,7 @@ osc.start(context.currentTime);
 env.start(context.currentTime);
 ```
 
-####Release
+####release
 
 The `release` method triggers the release stage of the envelope:
 
@@ -105,7 +109,7 @@ env.release(context.currentTime + 1);
 
 ####getReleaseCompleteTime
 
-Releasing the envelope isn't the same as stopping the sound source. You'll want to wait for the envelope to finish before stopping the source. Once release has been called, `getReleaseCompleteTime()` will return the time that the envelope finishes its release stage:
+Releasing the envelope isn't the same as stopping the sound source. Once release has been called, `getReleaseCompleteTime()` will return the time that the envelope finishes its release stage. If this is an amp envelope, and the startLevel (i.e., where the envelope will release to) is 0, `getReleaseCompleteTime()` is when your sound source is guaranteed to be silent and can be stopped:
 
 ```javascript
 let osc = context.createOscillator();
@@ -120,4 +124,25 @@ env.release(context.currentTime + 1);
 
 // Stop the oscillator once the envelope has completed.
 osc.stop(env.getReleaseCompleteTime());
+```
+
+####stop
+
+Because they are generating a signal, envelopes need to be stopped as well as released. This should coincide with when the actualy sound source is stopped.
+
+```javascript
+let osc = context.createOscillator();
+let gainNode = context.createGain();
+let env = new Envelope(context, settings);
+env.connect(gainNode.gain);
+
+osc.start(context.currentTime);
+env.start(context.currentTime);
+
+env.release(context.currentTime + 1);
+
+// Stop the oscillator once the envelope has completed.
+let stopAt = env.getReleaseCompleteTime();
+osc.stop(stopAt);
+env.stop(stopAt);
 ```
