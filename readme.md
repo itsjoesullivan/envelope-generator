@@ -133,7 +133,7 @@ osc.stop(env.getReleaseCompleteTime());
 
 ####stop
 
-Because they are generating a signal, envelopes need to be stopped as well as released. This should coincide with when the actualy sound source is stopped.
+Because they are generating a signal, envelopes need to be stopped as well as released. This should coincide with when the actual sound source is stopped.
 
 ```javascript
 let osc = context.createOscillator();
