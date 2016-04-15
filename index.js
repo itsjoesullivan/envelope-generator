@@ -23,6 +23,9 @@ class Envelope {
   }
 
 
+  /**
+   * Deal w/ settings object
+   */
   _setDefaults() {
 
     // curve
