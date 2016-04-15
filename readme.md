@@ -1,6 +1,11 @@
 ##Envelope Generator ![Test status](https://api.travis-ci.org/itsjoesullivan/envelope-generator.svg)
 
-Basic ADSR envelope generator for web audio.
+Basic ADSR envelope generator for web audio. A demo is running [here](http://joesul.li/van/envelope-generator/).
+
+- The release stage exists as a separate `GainNode`, so the envelope doesn't need to keep track of its output gain internally.
+- Uses the [voltage](https://github.com/mmckegg/adsr/blob/master/index.js#L126) idea from [mmckegg/adsr](https://github.com/mmckegg/adsr).
+
+###Example
 
 ```bash
 npm install --save envelope-generator
