@@ -84,9 +84,9 @@ describe('Envelope', () => {
       Envelope.prototype._setDefaults.apply(context);
       context.settings.delayTime.should.equal(0);
     });
-    it('sets startLevel to 0.00001', () => {
+    it('sets startLevel to 0.001', () => {
       Envelope.prototype._setDefaults.apply(context);
-      context.settings.startLevel.should.equal(0.00001);
+      context.settings.startLevel.should.equal(0.001);
     });
     it('sets attackTime to 0', () => {
       Envelope.prototype._setDefaults.apply(context);
@@ -96,9 +96,9 @@ describe('Envelope', () => {
       Envelope.prototype._setDefaults.apply(context);
       context.settings.holdTime.should.equal(0);
     });
-    it('sets decayTime to 0', () => {
+    it('sets decayTime to 0.001', () => {
       Envelope.prototype._setDefaults.apply(context);
-      context.settings.decayTime.should.equal(0);
+      context.settings.decayTime.should.equal(0.001);
     });
     it('sets sustainLevel to 1', () => {
       Envelope.prototype._setDefaults.apply(context);
@@ -185,6 +185,12 @@ describe('Envelope', () => {
         }
       };
       context._getRampMethodName = Envelope.prototype._getRampMethodName.bind(context);
+    });
+    it("sets attackDecayNode to startlevel at start", () => {
+      let when = 0.6;
+      Envelope.prototype.start.apply(context, [when]);
+      assert(context.attackDecayNode.gain
+          .setValueAtTime.calledWith(context.settings.startLevel, when));
     });
     it("sets attackDecayNode to startLevel after delayTime", () => {
       let when = 0.6;

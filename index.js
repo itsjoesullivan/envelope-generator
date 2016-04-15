@@ -40,7 +40,7 @@ class Envelope {
       this.settings.startLevel = 0;
     }
     if (this.settings.startLevel === 0) {
-      this.settings.startLevel = 0.00001;
+      this.settings.startLevel = 0.001;
     }
 
     // attackTime
@@ -57,10 +57,16 @@ class Envelope {
     if (typeof this.settings.decayTime !== 'number') {
       this.settings.decayTime = 0;
     }
+    if (this.settings.decayTime === 0) {
+      this.settings.decayTime = 0.001;
+    }
 
     // sustainLevel
     if (typeof this.settings.sustainLevel !== 'number') {
       this.settings.sustainLevel = 1;
+    }
+    if (this.settings.sustainLevel === 0) {
+      this.settings.sustainLevel = 0.001;
     }
 
     // releaseTime
@@ -118,6 +124,9 @@ class Envelope {
     let decayStartsAt = attackEndsAt + this.settings.holdTime;
     let decayEndsAt = decayStartsAt + this.settings.decayTime;
 
+    this.attackDecayNode.gain
+      .setValueAtTime(this.settings.startLevel,
+                      when);
     this.attackDecayNode.gain
       .setValueAtTime(this.settings.startLevel,
                       attackStartsAt);
