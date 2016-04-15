@@ -52,7 +52,7 @@ var Envelope = function () {
         this.settings.startLevel = 0;
       }
       if (this.settings.startLevel === 0) {
-        this.settings.startLevel = 0.00001;
+        this.settings.startLevel = 0.001;
       }
 
       // attackTime
@@ -69,10 +69,16 @@ var Envelope = function () {
       if (typeof this.settings.decayTime !== 'number') {
         this.settings.decayTime = 0;
       }
+      if (this.settings.decayTime === 0) {
+        this.settings.decayTime = 0.001;
+      }
 
       // sustainLevel
       if (typeof this.settings.sustainLevel !== 'number') {
         this.settings.sustainLevel = 1;
+      }
+      if (this.settings.sustainLevel === 0) {
+        this.settings.sustainLevel = 0.001;
       }
 
       // releaseTime
@@ -135,6 +141,7 @@ var Envelope = function () {
       var decayStartsAt = attackEndsAt + this.settings.holdTime;
       var decayEndsAt = decayStartsAt + this.settings.decayTime;
 
+      this.attackDecayNode.gain.setValueAtTime(this.settings.startLevel, when);
       this.attackDecayNode.gain.setValueAtTime(this.settings.startLevel, attackStartsAt);
       this.attackDecayNode.gain[attackRampMethodName](1, attackEndsAt);
       this.attackDecayNode.gain.setValueAtTime(1, decayStartsAt);
