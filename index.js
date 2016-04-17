@@ -292,4 +292,4 @@ class Envelope {
   }
 }
 
-export default Envelope;
+module.exports = Envelope;
