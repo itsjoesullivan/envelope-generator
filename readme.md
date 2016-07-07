@@ -54,6 +54,7 @@ The constructor accepts two arguments: an AudioContext and a settings object. Al
 - Passing an `initialValueCurve` will determine the shape of the curve usually covered by the attack and decay sections of an envelope, overriding any other curve values.
 - Passing a `releaseValueCurve` will determine the 
 - Both initialValueCurve and releaseValueCurve are expected to be normalized, i.e. not extending outside of the bounds [0, 1]. This is relatively intuitive for the `initialValueCurve`, but ensure that your `releaseValueCurve` also starts at a value of 1 to avoid any jumps in the sound. The reason for this is that these two curves are applied in series.
+- The sampleRate property applies to initialValueCurve and releaseValueCurve, allowing them to be expressed in a sampleRate different from that of the context.
 
 ```javascript
 let context = new AudioContext();
@@ -64,6 +65,7 @@ let settings = {
   releaseCurve: "linear",
   initialValueCurve: Float32Array,
   releaseValueCurve: Float32Array,
+  sampleRate: 44100,
   delayTime: 0,
   startLevel: 0,
   maxLevel: 1,

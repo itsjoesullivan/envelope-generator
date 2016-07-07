@@ -162,9 +162,10 @@ class Envelope {
    * (attack time, decay time, sustain level).
    */
   start(when) {
-    
-    if (initial...) {
-      this.attackDecayNode.setValueCurveAtTime(initial..., when);
+    if (this.settings.initialValueCurve) {
+      let initial = this.settings.initialValueCurve;
+      var duration = initial.length * this.settings.sampleRate;
+      this.attackDecayNode.gain.setValueCurveAtTime(initial, when, initial.length / this.settings.sampleRate);
     } else {
       let attackRampMethodName = this._getRampMethodName('attack');
       let decayRampMethodName = this._getRampMethodName('decay');
@@ -263,9 +264,12 @@ class Envelope {
   release(when) {
     this.releasedAt = when;
 
-    if (release...) {
+    if (this.settings.releaseValueCurve) {
+      let release = this.settings.releaseValueCurve;
+      let duration = release.length / this.settings.sampleRate;
       this.releaseNode.gain
-        .setValueCurveAtTime(release..., when);
+        .setValueCurveAtTime(release, when, duration);
+      this.settings.releaseTime = duration;
     } else {
       let releaseEndsAt = this.releasedAt + this.settings.releaseTime;
 
