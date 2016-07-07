@@ -1,6 +1,6 @@
 {
   "name": "envelope-generator",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "description": "An envelope generator for web audio",
   "main": "envelope-generator.js",
   "scripts": {

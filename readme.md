@@ -49,7 +49,11 @@ env.stop(stopAt);
 The constructor accepts two arguments: an AudioContext and a settings object. All settings are optional, but you will probably want to set at least `attackTime`, `decayTime`, `sustainLevel`, and `releaseTime`.
 
 - All `...Time` properties are in seconds
-- All `...Curve` properties default to `"linear"`, with `"exponential"` the alternative.
+- All `curve`, `attackCurve`, `decayCurve`, and `releaseCurve` properties default to `"linear"`, with `"exponential"` the alternative.
+- attackCurve, decayCurve, and releaseCurve override their respective curves
+- Passing an `initialValueCurve` will determine the shape of the curve usually covered by the attack and decay sections of an envelope, overriding any other curve values.
+- Passing a `releaseValueCurve` will determine the 
+- Both initialValueCurve and releaseValueCurve are expected to be normalized, i.e. not extending outside of the bounds [0, 1]. This is relatively intuitive for the `initialValueCurve`, but ensure that your `releaseValueCurve` also starts at a value of 1 to avoid any jumps in the sound. The reason for this is that these two curves are applied in series.
 
 ```javascript
 let context = new AudioContext();
@@ -58,6 +62,8 @@ let settings = {
   attackCurve: "linear",
   decayCurve: "linear",
   releaseCurve: "linear",
+  initialValueCurve: Float32Array,
+  releaseValueCurve: Float32Array,
   delayTime: 0,
   startLevel: 0,
   maxLevel: 1,

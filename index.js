@@ -162,35 +162,40 @@ class Envelope {
    * (attack time, decay time, sustain level).
    */
   start(when) {
+    
+    if (initial...) {
+      this.attackDecayNode.setValueCurveAtTime(initial..., when);
+    } else {
+      let attackRampMethodName = this._getRampMethodName('attack');
+      let decayRampMethodName = this._getRampMethodName('decay');
 
-    let attackRampMethodName = this._getRampMethodName('attack');
-    let decayRampMethodName = this._getRampMethodName('decay');
+      let attackStartsAt = when + this.settings.delayTime;
+      let attackEndsAt = attackStartsAt + this.settings.attackTime;
+      let decayStartsAt = attackEndsAt + this.settings.holdTime;
+      let decayEndsAt = decayStartsAt + this.settings.decayTime;
 
-    let attackStartsAt = when + this.settings.delayTime;
-    let attackEndsAt = attackStartsAt + this.settings.attackTime;
-    let decayStartsAt = attackEndsAt + this.settings.holdTime;
-    let decayEndsAt = decayStartsAt + this.settings.decayTime;
+      let attackStartLevel = 0;
+      if (attackRampMethodName === "exponentialRampToValueAtTime") {
+        attackStartLevel = 0.001;
+      }
 
-    let attackStartLevel = 0;
-    if (attackRampMethodName === "exponentialRampToValueAtTime") {
-      attackStartLevel = 0.001;
+      this.attackDecayNode.gain
+        .setValueAtTime(attackStartLevel,
+                        when);
+      this.attackDecayNode.gain
+        .setValueAtTime(attackStartLevel,
+                        attackStartsAt);
+      this.attackDecayNode.gain
+        [attackRampMethodName](1,
+                               attackEndsAt);
+      this.attackDecayNode.gain
+        .setValueAtTime(1,
+                        decayStartsAt);
+      this.attackDecayNode.gain
+        [decayRampMethodName](this.settings.sustainLevel,
+                              decayEndsAt);
     }
 
-    this.attackDecayNode.gain
-      .setValueAtTime(attackStartLevel,
-                      when);
-    this.attackDecayNode.gain
-      .setValueAtTime(attackStartLevel,
-                      attackStartsAt);
-    this.attackDecayNode.gain
-      [attackRampMethodName](1,
-                             attackEndsAt);
-    this.attackDecayNode.gain
-      .setValueAtTime(1,
-                      decayStartsAt);
-    this.attackDecayNode.gain
-      [decayRampMethodName](this.settings.sustainLevel,
-                            decayEndsAt);
 
     this.source.start(when);
 
@@ -257,20 +262,26 @@ class Envelope {
    */
   release(when) {
     this.releasedAt = when;
-    let releaseEndsAt = this.releasedAt + this.settings.releaseTime;
 
-    let rampMethodName = this._getRampMethodName('release');
+    if (release...) {
+      this.releaseNode.gain
+        .setValueCurveAtTime(release..., when);
+    } else {
+      let releaseEndsAt = this.releasedAt + this.settings.releaseTime;
 
-    let releaseTargetLevel = 0;
+      let rampMethodName = this._getRampMethodName('release');
 
-    if (rampMethodName === "exponentialRampToValueAtTime") {
-      releaseTargetLevel = 0.001;
+      let releaseTargetLevel = 0;
+
+      if (rampMethodName === "exponentialRampToValueAtTime") {
+        releaseTargetLevel = 0.001;
+      }
+
+      this.releaseNode.gain
+        .setValueAtTime(1, when);
+      this.releaseNode.gain
+        [rampMethodName](releaseTargetLevel, releaseEndsAt);
     }
-
-    this.releaseNode.gain
-      .setValueAtTime(1, when);
-    this.releaseNode.gain
-      [rampMethodName](releaseTargetLevel, releaseEndsAt);
 
   }
 
