@@ -1,11 +1,11 @@
-##Envelope Generator ![Test status](https://api.travis-ci.org/itsjoesullivan/envelope-generator.svg)
+## Envelope Generator ![Test status](https://api.travis-ci.org/itsjoesullivan/envelope-generator.svg)
 
 Basic ADSR envelope generator for web audio. A demo is running [here](http://joesul.li/van/envelope-generator/).
 
 - The release stage exists as a separate `GainNode`, so the envelope doesn't need to keep track of its output gain internally.
 - Uses the [voltage](https://github.com/mmckegg/adsr/blob/master/index.js#L126) idea from [mmckegg/adsr](https://github.com/mmckegg/adsr).
 
-###Example
+### Example
 
 ```bash
 npm install --save envelope-generator
@@ -42,9 +42,9 @@ osc.stop(stopAt);
 env.stop(stopAt);
 ```
 
-###Usage
+### Usage
 
-####Constructor
+#### Constructor
 
 The constructor accepts two arguments: an AudioContext and a settings object. All settings are optional, but you will probably want to set at least `attackTime`, `decayTime`, `sustainLevel`, and `releaseTime`.
 
@@ -78,7 +78,7 @@ let settings = {
 let env = new Envelope(context, settings)
 ```
 
-####connect
+#### connect
 
 The `connect` method should be attached directly to `AudioParam`s:
 
@@ -89,7 +89,7 @@ let env = new Envelope(context, settings);
 env.connect(gainNode.gain);
 ```
 
-####start
+#### start
 
 The `start` method triggers the attack and decay stages of the envelope:
 
@@ -103,7 +103,7 @@ osc.start(context.currentTime);
 env.start(context.currentTime);
 ```
 
-####release
+#### release
 
 The `release` method triggers the release stage of the envelope:
 
@@ -120,7 +120,7 @@ env.start(context.currentTime);
 env.release(context.currentTime + 1);
 ```
 
-####getReleaseCompleteTime
+#### getReleaseCompleteTime
 
 Releasing the envelope isn't the same as stopping the sound source. Once release has been called, `getReleaseCompleteTime()` will return the time that the envelope finishes its release stage. If this is an amp envelope, and the startLevel (i.e., where the envelope will release to) is 0, `getReleaseCompleteTime()` is when your sound source is guaranteed to be silent and can be stopped:
 
@@ -139,7 +139,7 @@ env.release(context.currentTime + 1);
 osc.stop(env.getReleaseCompleteTime());
 ```
 
-####stop
+#### stop
 
 Because they are generating a signal, envelopes need to be stopped as well as released. This should coincide with when the actual sound source is stopped.
 
